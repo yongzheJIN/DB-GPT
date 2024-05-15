@@ -38,19 +38,41 @@ class DashboardDataLoader:
                             )
                         }
                     )
-
-            for field_name in field_names[1:]:
-                if not field_map[field_name]:
-                    logger.info("More than 2 non-numeric column:" + field_name)
+            # if the data is not all None run else just return
+            if len(datas)!=0:
+                # Based analysis string Value in most Case is key otherwise where column value use id 
+                str_index = next((index for index, value in enumerate(datas[0]) if isinstance(value, str)), -2)
+                if str_index == -2:
+                    str_index = next((index for index, value in enumerate(list(field_names.keys())) if "id" in value, -2)
+                # in our hypothesis there is no id:for example the result is data[3000,4000],field("female","male")
+                if str_index !=-2:
+                    tempFieldName = field_names[:str_index]
+                    tempFieldName.extend(field_names[str_index+1:])
+                    for field_name in tempFieldName:
+                        for data in datas:
+                            # judge there are no None data in the value
+                            if not any(item is None for item in data):
+                                value_item = ValueItem(
+                                    name=data[str_index],
+                                    type=field_name,
+                                    value=str(data[field_names.index(field_name)]),
+                                )
+                                values.append(value_item)
+                # then to handle data[3000,4000],field("female","male")
                 else:
-                    for data in datas:
-                        value_item = ValueItem(
-                            name=data[0],
-                            type=field_name,
-                            value=str(data[field_names.index(field_name)]),
-                        )
-                        values.append(value_item)
-            return field_names, values
+                    result = [sum(values) for values in zip(*datas)]
+                        for index,field_name in enumerate(field_names):
+                            value_item = ValueItem(
+                                name=field_name,
+                                type=f"count{index}",
+                                value=str(result[index]),
+                            )
+                            values.append(value_item)
+                return field_names, values
+            else:
+                return field_names,[ValueItem(name='{field_name}',type=f"NoneData{index}",value='0' for index,field_name in enumerate(field_names)]
+                
+                
         except Exception as e:
             logger.debug("Prepare Chart Data Failed!" + str(e))
             raise ValueError("Prepare Chart Data Failed!")
